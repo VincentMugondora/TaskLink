@@ -1,0 +1,300 @@
+# Handyman App for Zimbabwe — Step‑by‑Step Development Roadmap
+
+> A practical, action‑oriented plan to go from idea → MVP → launch → growth in Zimbabwe.
+
+---
+
+## 1) Vision, Problem & Success
+
+**Problem:** Households and SMEs struggle to find reliable, vetted handymen quickly; workers struggle to find steady jobs and trusted payments.
+
+**Solution:** A mobile marketplace that matches customers with nearby verified handymen, with scheduling, chat, in‑app (or offline‑friendly) payments, and ratings.
+
+**North Star Metric:** Monthly jobs completed.
+
+**Key KPIs:**
+
+* Job fill rate (accepted ÷ posted)
+* Time‑to‑accept (minutes)
+* D1/D30 customer retention
+* Repeat booking rate
+* Average rating of completed jobs
+* Take rate (commission %) and contribution margin
+
+---
+
+## 2) Target Users & Personas (Zim‑specific)
+
+* **Customer (Home/SME):** Needs quick, affordable, trustworthy help; often uses WhatsApp; intermittent data.
+* **Handyman (Fundi/Artisan):** Skilled but under‑marketed; prefers cash/EcoCash; may have low‑end Android device.
+* **Admin/Operations:** Verifies workers, handles disputes, manages payouts, tracks performance.
+
+**Primary Jobs‑To‑Be‑Done:**
+
+* *Customer:* “Help me book a reliable pro near me today, and pay with EcoCash or cash.”
+* *Handyman:* “Give me steady, fairly‑paid work and fast payouts.”
+
+---
+
+## 3) MVP Scope (must‑have only)
+
+1. **Phone‑number sign‑up + OTP** (email optional).
+2. **Profiles** (customer, handyman). Handyman profile: skills, service areas, rate card, ID photo.
+3. **Service Catalogue** (plumbing, electrical, carpentry, painting, appliances, gardening, etc.).
+4. **Job Posting Flow** (category → description/photos → location → time window → budget).
+5. **Matching** (proximity + skill + rating); multiple handymen can respond with quotes.
+6. **In‑app Chat & Quote Acceptance** (quote → accept/decline → booking created).
+7. **Booking Lifecycle** (requested → accepted → on‑the‑way → in‑progress → completed → paid → reviewed).
+8. **Payments v1**: Cash on completion + PayNow link / bank transfer; record proof-of-payment. (EcoCash/OneMoney/EFT deeper integration in v1.1.)
+9. **Ratings & Reviews** (both sides).
+10. **Notifications** (push + SMS fallbacks; optional WhatsApp alerts later).
+11. **Basic Admin Dashboard** (user management, KYC review, job moderation, payment reconciliation, dispute workflow).
+12. **Basic Analytics** (events + funnels; ops reports: supply/demand, fill rate).
+
+**Deliberately NOT in MVP:** real‑time GPS tracking, route optimization, subscriptions, inventory/materials marketplace, advanced promotion engine. Park these for v2+.
+
+---
+
+## 4) System Architecture (pragmatic)
+
+**Mobile App:** Flutter (Android first, iOS later). Offline‑tolerant (local cache, queued writes). State mgmt: Riverpod/BLoC. Image compression for low bandwidth.
+
+**Backend:** Node.js (NestJS/Express) or Django REST. REST API (GraphQL optional later). Auth: JWT + refresh. Role‑based access.
+
+**Data:** PostgreSQL (primary), Redis (queues/cache), S3‑compatible object storage (images/docs). Search: Postgres trigram or OpenSearch (later).
+
+**Infra:** Docker containers; deploy to a cost‑effective VPS (e.g., DigitalOcean/Railway/Lightsail). CDN for static assets. CI/CD via GitHub Actions.
+
+**Observability:** Sentry (errors), OpenTelemetry/Prometheus + Grafana (metrics), structured JSON logs.
+
+**Comms:** Email (SendGrid/Mailgun), SMS via local aggregator; WhatsApp Business API via a BSP (later).
+
+**Maps/Geo:** Google Maps or OpenStreetMap/Nominatim + offline tile strategy.
+
+**KYC/IDV (v1.1):** Partner with a regional KYC provider (ID capture + selfie match). Store only what’s necessary.
+
+---
+
+## 5) High‑Level Data Model (MVP)
+
+* **User**(id, phone, role, status)
+* **HandymanProfile**(user\_id, skills\[], service\_areas\[], rate\_card, bio, verification\_status)
+* **ServiceCategory**(id, name, icon)
+* **JobRequest**(id, customer\_id, category\_id, description, photos\[], location, time\_window, budget, status)
+* **Quote**(id, job\_id, handyman\_id, quoted\_amount, message, status)
+* **Booking**(id, job\_id, handyman\_id, scheduled\_at, status)
+* **Payment**(id, booking\_id, method, amount, status, external\_ref)
+* **Payout**(id, handyman\_id, amount, method, status)
+* **Review**(id, booking\_id, reviewer\_id, rating, comment)
+* **Message**(id, thread\_id, sender\_id, text, attachments\[])
+* **Notification**(id, user\_id, type, payload, read\_at)
+* **Document**(id, user\_id, type, url) for IDs/certificates
+* **SupportTicket**(id, ref, user\_id, booking\_id?, reason, state)
+
+---
+
+## 6) Feature‑by‑Feature Acceptance Criteria
+
+**Sign‑up & OTP**
+
+* Given a valid phone number, OTP is delivered via SMS; user completes sign‑up within 2 minutes.
+* Throttling prevents >3 OTPs/minute.
+
+**Job Posting**
+
+* Customer selects category, adds description + up to 5 photos, sets location & time window, optional budget.
+* On submit, job visible to eligible handymen within X km; customer sees “pending quotes” state.
+
+**Quotes & Acceptance**
+
+* Eligible handymen can send one quote with ETA; customer can accept exactly one.
+* Once accepted, others are auto‑declined and notified.
+
+**Booking Lifecycle**
+
+* Status changes are auditable (timestamped). “On‑the‑way” auto‑nags after 30 min of inactivity.
+
+**Payment (v1)**
+
+* App records payment method and amount. If PayNow/EcoCash link used, webhook marks Payment as `paid` and unlocks review flow.
+
+**Reviews**
+
+* After completion, both parties prompted; one review per completed booking; ratings averaged per handyman.
+
+**Admin**
+
+* Can search users/jobs, change statuses with audit trail, export CSV of completed jobs and payouts.
+
+---
+
+## 7) Delivery Plan (12‑Week MVP)
+
+**Phase 0 — Discovery & Validation (Week 1)**
+
+* Interview 8–12 customers & 8–12 handymen in Harare/Bulawayo.
+* Validate pricing, categories, willingness to pay; collect photos of real jobs.
+* Define city‑by‑city launch plan; pick 3 focus categories (e.g., plumbing, electrical, appliances).
+
+**Phase 1 — UX & Design System (Weeks 2–3)**
+
+* User flows, wireframes, and clickable prototype.
+* Design tokens: fonts, spacing, states; icon set for categories.
+* Content: SMS/WhatsApp templates, transactional emails.
+
+**Phase 2 — Backend Foundation (Weeks 3–4)**
+
+* Auth, users, roles. Service categories, job requests, quotes.
+* Notifications service (abstract provider). Payment abstraction with “cash/record‑only” first.
+* Admin skeleton + RBAC.
+
+**Phase 3 — Mobile Core (Weeks 4–6)**
+
+* Sign‑up/OTP, profile setup, job posting, quotes, chat, booking states.
+* Image compression & offline cache; graceful retries.
+
+**Phase 4 — Payments & Notifications (Week 7)**
+
+* Integrate PayNow link (or similar) + webhooks; record cash.
+* Push notifications + SMS fallback.
+
+**Phase 5 — Admin & KYC Lite (Week 8)**
+
+* Document upload & manual verification workflow.
+* Ops views: queues for new jobs, disputes, payouts.
+
+**Phase 6 — QA, Beta & Pilot (Weeks 9–10)**
+
+* Internal QA + bug bash; security review.
+* Closed beta: 50–100 customers, 30–50 handymen in one city.
+* Iterate on pricing, copy, and flows.
+
+**Phase 7 — Launch & Scale (Weeks 11–12)**
+
+* Marketing launch; referral program on.
+* Monitoring dashboards; on‑call rotation.
+* Collect NPS, measure funnel, and plan v1.1.
+
+---
+
+## 8) Testing Strategy
+
+* **Unit & Widget Tests (Flutter):** core state & UI.
+* **API Tests:** contract tests; auth/permissions; rate limits.
+* **E2E (Flutter Integration Tests):** sign‑up → post job → quote → accept → payment → review.
+* **Load Tests:** quote/broadcast fan‑out and webhook handling.
+* **UAT Checklists:** per feature acceptance criteria.
+
+---
+
+## 9) Trust, Safety & Compliance
+
+* **KYC tiers:** Level 1 (phone + ID photo), Level 2 (ID + selfie + proof of address), Level 3 (optional reference/police clearance where feasible).
+* **Privacy/Safety:** Mask phone numbers until booking; share live location link (opt‑in) during job.
+* **Fraud Controls:** quote/price limits, velocity checks, device fingerprinting.
+* **Data Protection:** Encrypt PII at rest/in transit; strict access controls; short log retention for PII.
+* **Legal:** Terms of use, privacy policy, worker classification (contractor), tax receipts.
+
+---
+
+## 10) Payments & Payouts Plan
+
+* **v1:** Record cash; pay‑by‑link via local gateway; manual reconciliation.
+* **v1.1:** Deep mobile money integration (EcoCash/OneMoney) with webhooks and automatic marking of paid.
+* **Payouts:** Weekly payouts to handymen less commission; export CSV or API to bank/mobile money; maintain a lightweight ledger.
+* **Disputes/Refunds:** Admin can hold funds; reason codes; partial refunds.
+
+---
+
+## 11) Analytics & Reporting
+
+* **Product Analytics:** Firebase/Amplitude/PostHog with clear event taxonomy (e.g., `job_posted`, `quote_sent`, `booking_created`, `payment_succeeded`).
+* **Ops Dashboards:** supply vs demand, fill rates by category/area, average quote amount, cancellation reasons.
+* **Cohort & Funnel Tracking:** activation (post 1st job), conversion (accept quote), retention (repeat job within 30/60 days).
+
+---
+
+## 12) Go‑to‑Market (Zimbabwe)
+
+* **Acquisition:** WhatsApp groups, Facebook Marketplace & community pages, Google Business Profile, flyers at hardware stores & markets.
+* **Partnerships:** Hardware suppliers, estates/property managers, landlords, NGOs with housing programs.
+* **In‑product:** First‑booking discount, refer‑a‑fundi (handyman referral bonus), ratings badges.
+* **Content:** How‑to guides, before/after photos, customer testimonials localized to Harare/Bulawayo.
+
+---
+
+## 13) Budget & Team (Lean MVP)
+
+**Team (core, 3–6 months):**
+
+* 1 Product/Founder‑PM
+* 1–2 Flutter Engineers
+* 1 Backend Engineer
+* 1 Designer (part‑time)
+* 1 Ops/Support lead
+
+**Monthly Costs (indicative, USD):**
+
+* Hosting & storage: \$50–150 (scale later)
+* SMS/OTP: usage‑based (budget for pilots)
+* Analytics/Monitoring: \$0–100
+* KYC (if used): per‑check cost
+* Payment fees: gateway % + mobile money fixed fees
+* Ads & promos: variable (start small)
+
+Add 10–20% contingency.
+
+---
+
+## 14) Risks & Mitigations
+
+* **Low connectivity / device constraints:** offline cache; small APK; compress images; SMS fallbacks.
+* **Gateway downtime:** multiple payment methods; retries & idempotency.
+* **Quality control:** tiered verification; early reviews; remove low performers quickly.
+* **Cold start (supply/demand):** seed a small city/area; guarantee a minimum earnings in pilot; local ambassadors.
+* **Fraud/chargebacks:** strong audit trails; photo proof of work; dispute flows.
+
+---
+
+## 15) Post‑MVP Backlog (V1.1+)
+
+* Deeper EcoCash/OneMoney integration & automated payouts
+* Business accounts (property managers) with multi‑job scheduling
+* Subscriptions for handymen (lead packs, featured placement)
+* USSD and WhatsApp mini‑app for lightweight flow
+* In‑app invoicing & materials add‑ons; partner with hardware stores
+* Route optimization & arrival ETA
+* Insurance/guarantee program
+
+---
+
+## 16) Launch Checklist
+
+* [ ] All MVP acceptance criteria met
+* [ ] Incident response & on‑call docs
+* [ ] Payment webhooks tested end‑to‑end
+* [ ] Legal pages live; support SLA defined; refund policy
+* [ ] App store listing (or APK distribution for pilot) with clear screenshots & copy
+* [ ] Ops playbooks: onboarding, verification, payouts, disputes
+* [ ] Analytics dashboards and alerts live
+
+---
+
+## 17) Next Deliverables (suggested)
+
+* Screen wireframes (customer & handyman flows)
+* Copy deck (SMS/WhatsApp templates, push messages)
+* Technical tickets backlog (granular with estimates)
+* Pilot plan for one city (targets, budget, timeline)
+
+---
+
+### Quick Start Sprint (2 weeks)
+
+**Week 1:** Define categories, write user stories, spin up repo, scaffold Flutter app & API, implement sign‑up + OTP.
+
+**Week 2:** Job posting + quotes + basic admin; smoke tests; recruit 20 handymen and 40 customers for pilot waitlist.
+
+---
+
+> This roadmap is designed to be lean, locally adapted, and executable. It balances speed to market with trust & safety so you can learn fast without cutting corners where it matters.

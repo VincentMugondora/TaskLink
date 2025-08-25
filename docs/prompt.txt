@@ -1,0 +1,190 @@
+Windsurf Prompt — Tasklink (NestJS + Flutter)
+
+App Name: Tasklink
+Tagline: “Find trusted handymen near you — fast.”
+
+Goal: Build an MVP handyman marketplace app for Zimbabwe. Users: Customer, Handyman, Admin.
+
+Tech Stack
+
+Mobile: Flutter (Android first, iOS later).
+
+Backend: NestJS (Node + TypeScript) + Prisma ORM + PostgreSQL.
+
+Storage: S3-compatible (MinIO in dev).
+
+Auth: Phone number + OTP (mock provider for dev).
+
+Notifications: Push (stubbed) + SMS fallback.
+
+Payments: Cash + PayNow link (simulate gateway + webhook).
+
+Maps: OpenStreetMap (default) with lat/long entry; Google Maps optional flag.
+
+Functional Scope (MVP)
+Authentication
+
+Phone login with OTP (expires in 10 mins, max 3 requests/min).
+
+Roles: Customer, Handyman, Admin.
+
+Customer
+
+Sign up, create profile.
+
+Post a job (category, description, up to 5 photos, location, time window, budget).
+
+Get quotes from nearby handymen.
+
+Accept one quote → booking confirmed.
+
+Pay (cash or PayNow link).
+
+Review handyman after completion.
+
+Handyman
+
+Create profile (skills, service areas, rate card, ID photo).
+
+Receive notifications of nearby jobs.
+
+Submit quote (amount, ETA, message).
+
+Accept/reject jobs.
+
+Update booking status: on_the_way → in_progress → completed.
+
+Get reviews.
+
+Admin
+
+Approve handyman accounts.
+
+Manage users, jobs, quotes, bookings, and disputes.
+
+Export CSV of jobs & payouts.
+
+Data Models (Prisma Schema Targets)
+User: id, phone, name, role[customer|handyman|admin], status, createdAt
+HandymanProfile: id, userId, skills[string[]], serviceAreas[string[]], rateCard JSON, bio, verificationStatus, idDocUrl
+ServiceCategory: id, name, icon
+JobRequest: id, customerId, categoryId, description, photos[string[]], lat, lng, address, timeWindowStart, timeWindowEnd, budget, status[pending|quoting|accepted|cancelled|completed], createdAt
+Quote: id, jobId, handymanId, amount, message, etaMinutes, status[pending|declined|accepted], createdAt
+Booking: id, jobId, handymanId, scheduledAt, status[accepted|on_the_way|in_progress|completed|cancelled], timeline JSON
+Payment: id, bookingId, method[cash|paynow_link], amount, status[pending|paid|failed|refunded], externalRef
+Review: id, bookingId, reviewerId, rating(1..5), comment
+Notification: id, userId, type, payload JSON, readAt
+Document: id, userId, type[id_front|certificate], url
+SupportTicket: id, ref, userId, bookingId?, reason, state[open|held|resolved]
+
+API Endpoints (NestJS Controllers)
+
+Auth:
+
+POST /auth/request-otp, POST /auth/verify-otp
+
+Categories:
+
+GET /categories
+
+Jobs:
+
+POST /jobs, GET /jobs?near=lat,lng, GET /jobs/:id
+
+Quotes:
+
+POST /jobs/:id/quotes, GET /jobs/:id/quotes
+
+POST /quotes/:id/accept → creates Booking
+
+Bookings:
+
+PATCH /bookings/:id/status
+
+Payments:
+
+POST /bookings/:id/payments (generate PayNow link or record cash)
+
+POST /payments/paynow/webhook (mark paid)
+
+Reviews:
+
+POST /bookings/:id/reviews
+
+Handymen:
+
+GET /handymen/:id (public profile + avg rating)
+
+Admin:
+
+GET/POST /admin/verify, GET /admin/exports/jobs.csv, GET /admin/exports/payouts.csv
+
+Matching Logic
+
+Eligible handymen = same skill category + within X km + verified = approved.
+
+New jobs broadcast to eligible handymen via queue.
+
+Only one quote can be accepted → booking locked.
+
+UI Screens (Flutter)
+
+Onboarding & OTP
+
+Customer: Home (categories), Post Job, Job Detail (quotes list), Booking Timeline, Payment, Review
+
+Handyman: Job Feed, Quote Form, My Bookings, Profile (skills, ID upload)
+
+Shared: Settings, Notifications, Help/Support
+
+Styling & Branding
+
+Name: Tasklink
+
+Primary Color: #0066CC (Tasklink Blue)
+
+Secondary Color: #FFD600 (Zim Gold)
+
+Rounded cards, minimal modern layout.
+
+Icons for categories (plumbing, electrical, carpentry, etc.).
+
+Deliverables for Windsurf
+
+Monorepo structure:
+
+/apps/api → NestJS + Prisma API
+
+/apps/mobile → Flutter app
+
+/packages/contracts → shared types, OpenAPI spec
+
+/infra → docker-compose (Postgres, MinIO)
+
+Prisma schema & migrations for above data models.
+
+NestJS controllers/services implementing endpoints with RBAC guards.
+
+OpenAPI 3.0 spec auto-generated; Flutter client from it.
+
+Flutter app with navigation + state (Riverpod/BLoC) + offline queue (Hive).
+
+Seed script for service categories + sample users.
+
+Basic E2E test: post job → handyman quotes → customer accepts → booking → payment → review.
+
+README with setup instructions.
+
+Acceptance Criteria
+
+Customer can post job in <2 mins.
+
+Eligible handyman sees job in feed within 1 min.
+
+Only one quote can be accepted; others auto-declined.
+
+Payment recorded in DB (cash/manual + simulated PayNow webhook).
+
+After completion, both sides can leave a review.
+
+Admin can verify handyman and export jobs to CSV.

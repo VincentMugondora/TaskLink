@@ -1,0 +1,164 @@
+📄 Product Requirements Document (PRD) — Handyman Marketplace App for Zimbabwe
+1. Overview
+
+A mobile marketplace app connecting customers in Zimbabwe with reliable handymen (“fundis”) for household and SME repair jobs.
+
+Primary Users: Customers (hire services), Handymen (offer services), Admins (manage platform).
+
+Platforms: Android (first), iOS (later).
+
+Connectivity: Must handle low bandwidth, intermittent internet.
+
+2. Core Features (MVP)
+Authentication
+
+Phone number login with OTP via SMS.
+
+Role-based accounts: Customer, Handyman, Admin.
+
+Customer Flow
+
+Sign up → create profile.
+
+Post a job (category, description, photos, location, time window, budget).
+
+Receive quotes from nearby handymen.
+
+Accept one quote → booking confirmed.
+
+Pay (cash, EcoCash via PayNow link).
+
+Rate handyman after completion.
+
+Handyman Flow
+
+Sign up → create profile (skills, service areas, rate card, ID photo).
+
+Get notified of new jobs within service area.
+
+Submit quote (price, ETA, message).
+
+Accept/reject jobs.
+
+Get paid after completion.
+
+Collect reviews and improve ranking.
+
+Admin Flow
+
+Approve new handyman signups (ID verification).
+
+Manage users, jobs, payments, disputes.
+
+Export reports (jobs, payouts, reviews).
+
+3. Service Categories
+
+Plumbing
+
+Electrical
+
+Carpentry
+
+Painting
+
+Appliance Repair
+
+Gardening
+(stored in DB, easily extendable)
+
+4. Payments
+
+v1: Cash on delivery + PayNow link for EcoCash/bank.
+
+v1.1: Direct EcoCash/OneMoney API integration.
+
+Admin dashboard tracks payouts and commissions.
+
+5. Tech Requirements
+
+Frontend: Flutter (mobile-first).
+
+Backend: Node.js (NestJS or Express) OR Django REST.
+
+Database: PostgreSQL.
+
+Storage: S3-compatible (for images/IDs).
+
+Hosting: Cloud/VPS (DigitalOcean, AWS Lightsail).
+
+Notifications: Push + SMS fallback.
+
+Maps: Google Maps or OpenStreetMap.
+
+6. Data Models (MVP)
+
+User(id, name, phone, role, status)
+
+HandymanProfile(user_id, skills[], service_areas[], rate_card, verification_status)
+
+ServiceCategory(id, name, icon)
+
+JobRequest(id, customer_id, category_id, description, photos[], location, time_window, budget, status)
+
+Quote(id, job_id, handyman_id, amount, message, status)
+
+Booking(id, job_id, handyman_id, scheduled_at, status)
+
+Payment(id, booking_id, method, amount, status)
+
+Review(id, booking_id, reviewer_id, rating, comment)
+
+7. Acceptance Criteria
+
+Customers can post a job in < 2 minutes.
+
+Handymen within X km receive job notifications within 1 minute.
+
+Customers can view at least 3 quotes (if supply exists).
+
+Only one quote can be accepted → booking locked.
+
+Payments recorded in DB (cash/manual + gateway webhook).
+
+After completion, both parties must be able to review.
+
+Admin can deactivate users, resolve disputes, and export job/payment CSVs.
+
+8. Non-Functional Requirements
+
+Performance: App size < 30MB, pages load < 2s on 3G.
+
+Resilience: Offline cache + retry for job posting/quotes.
+
+Security: JWT auth, hashed passwords, encrypted PII.
+
+Scalability: Support up to 10k users in MVP.
+
+9. Out of Scope (for MVP)
+
+Real-time GPS tracking.
+
+Subscriptions/premium listings.
+
+WhatsApp mini-app integration.
+
+Automatic payouts (manual first).
+
+10. Success Metrics
+
+≥70% of posted jobs get at least one accepted quote.
+
+Average rating ≥4.5/5 for top 50% of handymen.
+
+≥30% of customers post a repeat job within 30 days.
+
+Commission revenue ≥5% of GMV within first 6 months.
+
+👉 With this PRD, Windsurf can generate:
+
+Flutter app screens (auth, job posting, quotes, booking flow).
+
+Node.js/Django backend (API endpoints + DB schema).
+
+Admin dashboard (basic CRUD + reports).
